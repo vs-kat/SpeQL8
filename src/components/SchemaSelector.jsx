@@ -41,20 +41,16 @@ const schemaDisplay = (props) => {
   }
 
   function handleAdd(e) {
-    // console.log("this is the event for the add schema buttton", e);
     e.preventDefault();
 
     if (input !== "" && uriInput !== "") {
       let lastAddedPort = services[services.length - 1].port;
-      // console.log(`last added port is ${lastAddedPort}`);
       const newPort = lastAddedPort + 1;
       const newService = {
         label: input,
         db_uri: uriInput,
         port: newPort,
       };
-      services.push(newService);
-      console.log(services);
 
       fetch("http://localhost:3333/newServer", {
         method: "POST",
@@ -77,6 +73,7 @@ const schemaDisplay = (props) => {
             });
         });
 
+      services.push(newService);
       updateSchemaList((prevState) => [...prevState, input]);
       inputChange("");
       changeUri("");
@@ -94,16 +91,27 @@ const schemaDisplay = (props) => {
   function handleFileSubmit(e) {
     e.preventDefault();
     const label = document.getElementById("schemaNameFromFile").value;
+    console.log(services);
+    let duplicate = services.some((el) => {
+      el.label === label
+    })
+    console.log('DUP', duplicate);
     const form = document.getElementById("uploadFileForm");
     const formData = new FormData(form);
     const file = formData.get("myFile");
     const indexOfDot = file.name.lastIndexOf(".");
     const fileExtension = file.name.slice(`${indexOfDot}`);
     if (fileExtension !== ".sql" && fileExtension !== ".tar") {
-      alert("please upload .sql or .tar file");
+      alert("Please upload .sql or .tar file");
       return;
     } else if (label.trim() === "" || label ==="") {
-      alert("please provide a name for your database");
+      alert("Please provide a name for your database");
+      return;
+    } else if (label !== label.replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ")) {
+      alert("Invalid database name");
+      return;
+    } else if (duplicate) {
+      alert('Database name must be unique');
       return;
     } else {
       fetch("http://localhost:3333/uploadFile", {
@@ -113,11 +121,7 @@ const schemaDisplay = (props) => {
       })
         .then((JSONdata) => JSONdata.json())
         .then((data) => services.push(data))
-        // .then(() => console.log(services))
         .then(() => updateSchemaList((prevState) => [...prevState, label]));
-      // .then(() => console.log(schemaList));
-        // .then(() => inputChange(""))
-        // .then(() => changeUri(""));
         document.getElementById("schemaNameFromFile").value = "";
     }
   }
